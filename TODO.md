@@ -1,0 +1,8 @@
+- Update getYouTubeVideoId to getVideoInfo supporting YouTube and Facebook
+- Change input to textarea for multiple URLs
+- Update generateVideos to handle multiple URLs and embeds
+- Update clearVideos
+- Update event listener for textarea
+- Update Facebook regex to support share URLs
+- Add Instagram support
+- Test the app (server running on http://localhost:8000/home.html)
