@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Automation Config</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        form { display: flex; flex-direction: column; }
+        label { margin-top: 15px; font-weight: bold; }
+        input, select { padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
+        button { margin-top: 20px; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 YouTube Automation Setup</h1>
+        <form action="/start" method="post">
+            <label for="url">YouTube Video URL:</label>
+            <input type="url" id="url" name="url" required placeholder="https://www.youtube.com/watch?v=...">
+
+            <label for="num_drivers">Number of Drivers:</label>
+            <input type="number" id="num_drivers" name="num_drivers" min="1" max="10" value="1" required>
+
+            <label for="headless">Run in Headless Mode:</label>
+            <select id="headless" name="headless">
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+            </select>
+
+            <label for="enable_dashboard">Enable Web Dashboard:</label>
+            <select id="enable_dashboard" name="enable_dashboard">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+
+            <button type="submit">Start Automation</button>
+            <p style="margin-top: 15px; color: #666; font-size: 14px;">Note: If automation is already running, it will be stopped and restarted with new settings.</p>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Automation Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header h1 { color: #667eea; margin-bottom: 10px; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 { color: #666; font-size: 14px; margin-bottom: 10px; }
+        .stat-card .value { font-size: 32px; font-weight: bold; color: #667eea; }
+        .drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+        }
+        .driver-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        .driver-card.error { border-left-color: #e74c3c; }
+        .driver-card.running { border-left-color: #2ecc71; }
+        .driver-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .driver-id { font-size: 18px; font-weight: bold; }
+        .status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status.running { background: #2ecc71; color: white; }
+        .status.error { background: #e74c3c; color: white; }
+        .status.refreshing { background: #f39c12; color: white; }
+        .driver-info { font-size: 13px; color: #666; line-height: 1.8; }
+        .driver-info div { display: flex; justify-content: space-between; }
+        .refresh-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .refresh-btn:hover { background: #5568d3; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 YouTube Automation Dashboard</h1>
+            <p id="url"></p>
+            <form action="/stop" method="post" style="margin-top: 10px;">
+                <button type="submit" style="padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;">Stop Automation</button>
+            </form>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Uptime</h3>
+                <div class="value" id="uptime">0:00:00</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Drivers</h3>
+                <div class="value" id="active-drivers">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Refreshes</h3>
+                <div class="value" id="total-refreshes">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Errors</h3>
+                <div class="value" id="total-errors">0</div>
+            </div>
+        </div>
+
+        <div class="drivers-grid" id="drivers-grid"></div>
+    </div>
+
+    <script>
+        function updateDashboard() {
+            fetch('/api/stats')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('url').textContent = data.url;
+                    document.getElementById('uptime').textContent = data.uptime;
+                    document.getElementById('active-drivers').textContent =
+                        `${data.active_drivers}/${data.total_drivers}`;
+                    document.getElementById('total-refreshes').textContent = data.total_refreshes;
+                    document.getElementById('total-errors').textContent = data.total_errors;
+
+                    const grid = document.getElementById('drivers-grid');
+                    grid.innerHTML = data.drivers.map(d => {
+                        const progress = d.duration ? (d.current_time / d.duration * 100).toFixed(1) : 0;
+                        return `
+                            <div class="driver-card ${d.status}">
+                                <div class="driver-header">
+                                    <div class="driver-id">Driver ${d.driver_id}</div>
+                                    <span class="status ${d.status}">${d.status}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progress}%"></div>
+                                </div>
+                                <div class="driver-info">
+                                    <div><span>Playing:</span><span>${d.is_playing ? '▶️ Yes' : '⏸️ No'}</span></div>
+                                    <div><span>Progress:</span><span>${Math.floor(d.current_time)}s / ${Math.floor(d.duration)}s</span></div>
+                                    <div><span>Refreshes:</span><span>${d.refresh_count}</span></div>
+                                    <div><span>Errors:</span><span>${d.error_count}</span></div>
+                                    <div><span>Last Refresh:</span><span>${d.last_refresh}</span></div>
+                                    <div><span>Uptime:</span><span>${d.uptime}</span></div>
+                                    <div><span>CPU:</span><span>${d.cpu_percent.toFixed(1)}%</span></div>
+                                    <div><span>Memory:</span><span>${d.memory_mb.toFixed(1)} MB</span></div>
+                                </div>
+                                <button class="refresh-btn" onclick="refreshDriver(${d.driver_id})">
+                                    🔄 Refresh Now
+                                </button>
+                            </div>
+                        `;
+                    }).join('');
+                });
+        }
+
+        function refreshDriver(driverId) {
+            fetch(`/api/refresh/${driverId}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Driver ${driverId} refreshed successfully`);
+                    } else {
+                        alert(`Failed to refresh driver ${driverId}`);
+                    }
+                    updateDashboard();
+                });
+        }
+
+        updateDashboard();
+        setInterval(updateDashboard, 2000);
+    </script>
+</body>
+</html>
