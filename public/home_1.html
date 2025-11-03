@@ -1,0 +1,133 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Welcome to Home 1</h1>
+    <iframe src="https://www.croxyproxy.com
+" width="600" height="400" style="border:none;">
+        
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Website Loader (iframe)</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; background:#f5f7fa; color:#111; padding:20px; }
+    .card { max-width:980px; margin:12px auto; background:#fff; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
+    .row { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+    input[type="text"]{flex:1; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px;}
+    button{padding:10px 12px; border-radius:6px; border:none; cursor:pointer; background:#0b84ff;color:#fff;}
+    iframe{width:100%; height:600px; border:1px solid #ddd; border-radius:6px; background:#fff;}
+    .hint{font-size:13px;color:#555;margin-top:8px;}
+    .error{color:#b00020;font-weight:600;margin-top:10px;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Load website in iframe</h2>
+
+    <div class="row">
+      <input id="url" type="text" placeholder="Paste website URL e.g. https://www.croxyproxy.com" value="https://www.croxyproxy.com" />
+      <button id="load">Load in iframe</button>
+      <button id="open" style="background:#2dbe60">Open in new tab</button>
+    </div>
+
+    <div class="hint">Tip: Many sites block framing with headers (X-Frame-Options / CSP). If the site is blocked the iframe will show an error or stay blank — use "Open in new tab" as fallback.</div>
+
+    <div id="status" class="hint"></div>
+
+    <iframe id="frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" src="about:blank" title="site frame"></iframe>
+
+    <div id="blocked" class="error" style="display:none;">
+      This site refused to be framed (blocked by X-Frame-Options or Content-Security-Policy). Use "Open in new tab" or use a proxy that permits framing.
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById('url');
+    const loadBtn = document.getElementById('load');
+    const openBtn = document.getElementById('open');
+    const frame = document.getElementById('frame');
+    const status = document.getElementById('status');
+    const blockedMsg = document.getElementById('blocked');
+
+    function normalizeUrl(v) {
+      v = (v || '').trim();
+      if (!v) return '';
+      // add protocol if missing
+      if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+      return v;
+    }
+
+    // try to detect framing failure: set iframe src then after short timeout check its contentWindow length or try to read location (will throw for cross-origin)
+    function loadUrlInIframe(url) {
+      blockedMsg.style.display = 'none';
+      status.textContent = 'Loading...';
+      frame.src = url;
+
+      // After some delay, check whether the frame is likely blocked.
+      // Note: there is no perfect cross-browser test — this is heuristic:
+      setTimeout(() => {
+        try {
+          // If same-origin, this may succeed. If cross-origin, accessing location.href will throw.
+          const fLocation = frame.contentWindow.location.href;
+          // If the browser returns "about:blank" or empty, consider still loading.
+          if (!fLocation || fLocation === 'about:blank') {
+            // Still may be loading or blocked. Wait a bit more.
+            status.textContent = 'Still loading...';
+            return;
+          }
+          // appears loaded (same-origin). Clear status.
+          status.textContent = 'Loaded (same-origin)';
+        } catch (err) {
+          // Cross-origin: we cannot read location — but content may still be visible.
+          // To detect blocking by X-Frame-Options/CSP, we test frame.contentWindow length or try to postMessage.
+          status.textContent = 'Loaded (cross-origin). If content is blank or an error shows, the site may block framing.';
+          // Another heuristic: check for blank iframe by measuring its document body height (only works if same-origin). So show hint always.
+        }
+        // After more time, if iframe is blank or blocked, show blocked message:
+        setTimeout(() => {
+          // If the iframe's document is blocked by CSP, many browsers just show an empty box.
+          // We'll show a user prompt to open in new tab.
+          const isBlank = frame.src === 'about:blank' || frame.src === '';
+          // We cannot reliably detect X-Frame-Options from cross-origin. So show message only if height is very small or appears empty.
+          // Simple visual check: if iframe's contentWindow is null or undefined
+          if (!frame.contentWindow) {
+            blockedMsg.style.display = '';
+            status.textContent = 'Blocked: browser prevented framing.';
+          }
+        }, 1500);
+      }, 700);
+    }
+
+    loadBtn.addEventListener('click', () => {
+      const url = normalizeUrl(input.value);
+      if (!url) {
+        alert('Please enter a URL');
+        return;
+      }
+      loadUrlInIframe(url);
+    });
+
+    // open in new tab
+    openBtn.addEventListener('click', () => {
+      const url = normalizeUrl(input.value);
+      if (!url) return alert('Please enter a URL');
+      window.open(url, '_blank', 'noopener');
+    });
+
+    // load default value on page open
+    window.addEventListener('load', () => {
+      const defaultUrl = normalizeUrl(input.value);
+      if (defaultUrl) loadUrlInIframe(defaultUrl);
+    });
+  </script>
+</body>
+</html>
